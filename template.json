@@ -1,0 +1,150 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": [
+    "AWS::Serverless-2016-10-31"
+  ],
+  "Parameters": {
+    "RuleSetName": {
+      "Type": "String"
+    },
+    "SlackToken": {
+      "Type": "String"
+    },
+    "EmailAddress": {
+      "Type": "String"
+    }
+  },
+  "Globals": {
+    "Function": {
+      "Runtime": "nodejs12.x"
+    }
+  },
+  "Resources": {
+    "S3Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "${AWS::AccountId}-${AWS::StackName}-mailbucket"
+        }
+      }
+    },
+    "BucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "S3Bucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Sid": "AllowSESPuts",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ses.amazonaws.com"
+              },
+              "Action": "s3:PutObject",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
+                    {
+                      "Ref": "S3Bucket"
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "LambdaPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "EmailParser"
+        },
+        "Principal": "s3.amazonaws.com",
+        "Action": "lambda:InvokeFunction"
+      }
+    },
+    "ReceiptRule": {
+      "Type": "AWS::SES::ReceiptRule",
+      "DependsOn": [
+        "BucketPolicy"
+      ],
+      "Properties": {
+        "RuleSetName": {
+          "Ref": "RuleSetName"
+        },
+        "Rule": {
+          "Enabled": true,
+          "ScanEnabled": true,
+          "TlsPolicy": "Optional",
+          "Recipients": [
+            {"Ref": "EmailAddress"}
+          ],
+          "Actions": [
+            {
+              "S3Action": {
+                "BucketName": {
+                  "Ref": "S3Bucket"
+                },
+                "ObjectKeyPrefix": "email"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "EmailParser": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "CodeUri": ".",
+        "Handler": "index.handler",
+        "MemorySize": 768,
+        "Timeout": 15,
+        "Environment": {
+          "Variables": {
+            "SlackToken": {
+              "Ref": "SlackToken"
+            }
+          }
+        },
+        "Events": {
+          "S3": {
+            "Type": "S3",
+            "Properties": {
+              "Bucket": {
+                "Ref": "S3Bucket"
+              },
+              "Events": "s3:ObjectCreated:*",
+              "Filter": {
+                "S3Key": {
+                  "Rules": [
+                    {
+                      "Name": "prefix",
+                      "Value": "email"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "Policies": [
+          {
+            "S3ReadPolicy": {
+              "BucketName": {
+                "Fn::Sub": "${AWS::AccountId}-${AWS::StackName}-mailbucket"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {}
+}

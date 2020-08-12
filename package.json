@@ -1,0 +1,58 @@
+{
+  "name": "mail-to-slack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "jest": {
+    "collectCoverage": false,
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ]
+  },
+  "dependencies": {
+    "@mhlabs/structured-logging": "^2.0.2",
+    "@slack/web-api": "^5.11.0",
+    "mailparser": "^2.8.1"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.730.0",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "*",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-import": "^2.18.0",
+    "eslint-plugin-jest": "*",
+    "eslint-plugin-prettier": "^3.1.0",
+    "husky": "*",
+    "jest": "^25.5.4",
+    "lint-staged": "*",
+    "nodemon": "2.0.4",
+    "prettier": "^2.0.4"
+  },
+  "scripts": {
+    "test": "jest",
+    "coverage": "jest --coverage",
+    "coverage-percentage": "jest --coverage --coverageReporters=text-summary 2>/dev/null | grep 'Functions    :' | cut -d ':' -f 2 | cut -d '%' -f 1 | xargs | tr -d '\n'",
+    "eslint": "eslint",
+    "start": "nodemon ./src/apiLocal.js",
+    "debug": "node --inspect-brk=9229 ./src/apiLocal.js"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "**/*.json"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,css,md}": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

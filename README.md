@@ -12,3 +12,6 @@ When email threads evolve in to instant messaging-like replies and you wish you 
   *  take note of the RuleSet name
 * run `sam deploy --guided -t template.json`
 
+## Note
+The channel created will be public for your organisation, so think twice if the email thread contains confidential information
+
